@@ -61,19 +61,7 @@ export default function ComparisonTable() {
                     borderBottom: '1px solid hsl(45 88% 52% / 0.2)',
                   }}
                 >
-                  ArbitrAI{' '}
-                  <span
-                    className="inline-block align-middle text-xs font-display font-semibold ml-1 px-2 py-0.5 rounded-full"
-                    style={{
-                      background: 'hsl(45 88% 52% / 0.15)',
-                      color: 'hsl(45 88% 52%)',
-                      border: '1px solid hsl(45 88% 52% / 0.3)',
-                      fontSize: '0.65rem',
-                      letterSpacing: '0.05em',
-                    }}
-                  >
-                    RECOMMENDED
-                  </span>
+                  ArbitrAI
                 </th>
                 <th
                   className="py-3 px-4 font-display text-sm text-center"
