@@ -37,7 +37,8 @@ function AppRoutes() {
           onDisconnect={handleDisconnect}
         />
       )}
-      <main className="flex-1">
+      {/* pt-16 offsets the fixed header on functional pages */}
+      <main className={`flex-1 ${!isLanding ? 'pt-16' : ''}`}>
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/create" element={<CreateDisputePage wallet={wallet} />} />
