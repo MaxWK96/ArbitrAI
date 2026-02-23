@@ -10,7 +10,120 @@
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Static skeleton — React replaces this on mount -->
+      <style>
+        #app-shell {
+          min-height: 100vh;
+          background: #0d0f12;
+          color: #e8e0d0;
+          font-family: Inter, sans-serif;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 2rem 1.5rem;
+          text-align: center;
+          gap: 1.5rem;
+        }
+        #app-shell .shell-logo {
+          display: flex;
+          align-items: center;
+          gap: 0.625rem;
+          margin-bottom: 0.25rem;
+        }
+        #app-shell .shell-logo svg { flex-shrink: 0; }
+        #app-shell h1 {
+          font-size: 2rem;
+          font-weight: 700;
+          letter-spacing: -0.01em;
+          color: #e8e0d0;
+          margin: 0;
+        }
+        #app-shell p {
+          font-size: 0.9375rem;
+          color: #7a8494;
+          max-width: 36rem;
+          line-height: 1.6;
+          margin: 0;
+        }
+        #app-shell .contracts {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.625rem;
+          justify-content: center;
+          margin-top: 0.25rem;
+        }
+        #app-shell .contract-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.4rem 0.75rem;
+          border: 1px solid #2a2d35;
+          border-radius: 0.5rem;
+          background: #161820;
+          font-size: 0.75rem;
+          text-decoration: none;
+          color: #c8a84b;
+          font-family: 'JetBrains Mono', monospace;
+          transition: border-color 0.15s;
+        }
+        #app-shell .contract-pill:hover { border-color: #c8a84b66; }
+        #app-shell .contract-name {
+          color: #9ca3af;
+          font-family: Inter, sans-serif;
+          font-size: 0.7rem;
+          font-weight: 500;
+        }
+        #app-shell .dot {
+          width: 0.375rem;
+          height: 0.375rem;
+          border-radius: 50%;
+          background: #c8a84b;
+          flex-shrink: 0;
+        }
+        #app-shell .spinner {
+          width: 1.25rem;
+          height: 1.25rem;
+          border: 2px solid #2a2d35;
+          border-top-color: #c8a84b;
+          border-radius: 50%;
+          animation: spin 0.8s linear infinite;
+          margin-top: 0.5rem;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+      </style>
+      <div id="app-shell">
+        <div class="shell-logo">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#c8a84b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="12" y1="18" x2="12" y2="12"/>
+            <line x1="9" y1="15" x2="15" y2="15"/>
+          </svg>
+          <h1>ArbitrAI</h1>
+        </div>
+        <p>Three independent AI models reach cryptographic consensus inside Chainlink CRE — trustless dispute resolution with no human arbitrator and no admin key.</p>
+        <div class="contracts">
+          <a class="contract-pill" href="https://sepolia.etherscan.io/address/0x97D02A149aAEB0C60f6DFc335d944f84dCFD9ec7" target="_blank" rel="noopener noreferrer">
+            <span class="dot"></span>
+            <span class="contract-name">DisputeEscrow</span>
+            0x97D0…9ec7
+          </a>
+          <a class="contract-pill" href="https://sepolia.etherscan.io/address/0xFF8DaeC3aEC58Ec1D2F48e94d4421783478cd8B5" target="_blank" rel="noopener noreferrer">
+            <span class="dot"></span>
+            <span class="contract-name">ArbitrationRegistry</span>
+            0xFF8D…d8B5
+          </a>
+          <a class="contract-pill" href="https://sepolia.etherscan.io/address/0x18b34E31290Ac10dE263943cD9D617EE1f570133" target="_blank" rel="noopener noreferrer">
+            <span class="dot"></span>
+            <span class="contract-name">CREVerifier</span>
+            0x18b3…0133
+          </a>
+        </div>
+        <div class="spinner"></div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
