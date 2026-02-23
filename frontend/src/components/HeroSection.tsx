@@ -1,4 +1,5 @@
 import { Play, PlusCircle } from "lucide-react";
+import DisputeLifecycle from "./DisputeLifecycle";
 
 const HeroSection = () => {
   return (
@@ -50,22 +51,9 @@ const HeroSection = () => {
           Full CRE workflow on Sepolia in under 60 seconds.
         </p>
 
-        {/* Contract badges */}
-        <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
-          {[
-            { name: "DisputeEscrow", addr: "0x97D0…9ec7" },
-            { name: "ArbitrationRegistry", addr: "0xFF8D…d8B5" },
-            { name: "CREVerifier", addr: "0x18b3…0133" },
-          ].map((c) => (
-            <div
-              key={c.name}
-              className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-1.5"
-            >
-              <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-              <span className="font-body text-xs text-muted-foreground">{c.name}</span>
-              <span className="font-mono text-xs text-primary">{c.addr}</span>
-            </div>
-          ))}
+        {/* Live dispute lifecycle animation */}
+        <div className="mt-12 w-full max-w-lg mx-auto">
+          <DisputeLifecycle />
         </div>
       </div>
     </section>
