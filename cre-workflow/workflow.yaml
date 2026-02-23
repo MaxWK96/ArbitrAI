@@ -1,0 +1,171 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# ArbitrAI — Chainlink CRE Dispute Resolution Workflow
+# ═══════════════════════════════════════════════════════════════════════════════
+#
+# This workflow is the CORE of ArbitrAI. It runs inside Chainlink's verifiable
+# Decentralized Oracle Network (DON) and orchestrates the entire arbitration:
+#
+#   1. Polls ArbitrationRegistry for disputes awaiting resolution
+#   2. Fetches encrypted evidence via Confidential HTTP (never touches public chain)
+#   3. Queries Claude, GPT-4, and Mistral with identical prompts
+#   4. Applies 2/3 consensus — if models disagree, funds are returned
+#   5. Signs the verdict with the CRE operator key (stored in CRE HSM)
+#   6. Submits the signed verdict to CREVerifier.sol on-chain
+#
+# Why CRE? The computation is verifiable, the evidence stays private,
+# and the on-chain settlement is cryptographically linked to the AI reasoning.
+#
+# Prize tracks: CRE & AI, Privacy, Risk & Compliance, AI Agents
+# ═══════════════════════════════════════════════════════════════════════════════
+
+name: "arbitrai-dispute-resolver"
+version: "1.0.0"
+owner: "${CRE_OWNER_ADDRESS}"
+
+# ── Secrets ─────────────────────────────────────────────────────────────────
+# All secrets are stored in Chainlink CRE's HSM-backed secrets manager.
+# They are injected at runtime and never appear in workflow logs.
+secrets:
+  - name: ANTHROPIC_API_KEY
+    description: "Claude API key for AI verdict generation"
+  - name: OPENAI_API_KEY
+    description: "OpenAI API key for GPT-4 verdict generation"
+  - name: MISTRAL_API_KEY
+    description: "Mistral API key for third model vote"
+  - name: OPERATOR_PRIVATE_KEY
+    description: "CRE operator key — signs verdicts for on-chain ECDSA verification"
+  - name: EVIDENCE_SERVER_KEY
+    description: "Bearer token for Confidential HTTP evidence endpoint"
+  - name: RPC_URL
+    description: "Ethereum RPC endpoint (Sepolia)"
+
+# ── Environment ──────────────────────────────────────────────────────────────
+env:
+  CHAIN_ID: "11155111"
+  REGISTRY_CONTRACT: "${ARBITRATION_REGISTRY_ADDRESS}"
+  VERIFIER_CONTRACT: "${CRE_VERIFIER_ADDRESS}"
+  EVIDENCE_SERVER_URL: "${EVIDENCE_SERVER_URL}"
+  CONSENSUS_THRESHOLD: "2"
+  MAX_VERDICT_AGE_SECONDS: "3600"
+
+# ── Triggers ─────────────────────────────────────────────────────────────────
+triggers:
+  # Primary: polls for new disputes every 5 minutes
+  - id: cron-poll
+    type: "crons@1.0.0"
+    config:
+      schedule: "*/5 * * * *"
+      description: "Poll for disputes in IN_ARBITRATION state"
+
+  # Secondary: manual trigger for demos and testing
+  - id: manual-resolve
+    type: "manual@1.0.0"
+    config:
+      description: "Resolve a specific dispute by ID"
+      inputs:
+        - name: disputeId
+          type: string
+          description: "bytes32 dispute ID (hex string)"
+
+# ── Capabilities ─────────────────────────────────────────────────────────────
+capabilities:
+  # Standard HTTP for AI API calls (requests are logged in workflow execution)
+  - type: "http@1.0.0"
+    id: http-standard
+
+  # Confidential HTTP for evidence fetching
+  # Requests and responses are end-to-end encrypted — never visible in logs.
+  # This is how ArbitrAI ensures evidence privacy: the content is processed
+  # inside the CRE TEE (Trusted Execution Environment) and never exposed.
+  - type: "http-confidential@1.0.0"
+    id: http-confidential
+    config:
+      description: "Fetch encrypted dispute evidence — content stays within CRE TEE"
+
+  # Ethereum Transaction Writer — submits the signed verdict on-chain
+  - type: "eth-transaction@1.0.0"
+    id: eth-writer
+    config:
+      chainId: "11155111"
+      description: "Submit verified CRE verdict to CREVerifier.sol"
+
+# ── Workflow Steps ────────────────────────────────────────────────────────────
+steps:
+  # ── Step 1: Fetch pending disputes (cron path) ────────────────────────────
+  - id: fetch-pending-disputes
+    trigger: cron-poll
+    capability: http-standard
+    config:
+      method: GET
+      url: "${EVIDENCE_SERVER_URL}/api/disputes/pending"
+      headers:
+        Authorization: "Bearer ${EVIDENCE_SERVER_KEY}"
+        Content-Type: "application/json"
+      timeout: 10000
+    outputs:
+      disputes: "$.body.disputes"
+
+  # ── Step 2: Main compute — AI consensus + verdict signing ─────────────────
+  - id: resolve-dispute
+    type: "compute@1.0.0"
+    triggers:
+      - cron-poll
+      - manual-resolve
+    dependsOn:
+      - fetch-pending-disputes  # only for cron path
+    config:
+      # WASM binary produced by: javy compile dist/index.js -o dist/index.wasm
+      binary: "dist/index.wasm"
+      timeout: 120000  # 2 minutes per dispute (AI calls can be slow)
+      memory: 256      # MB
+    inputs:
+      # From cron path: array of pending disputeIds
+      pendingDisputes: "$(steps.fetch-pending-disputes.disputes)"
+      # From manual path: single disputeId
+      manualDisputeId: "$(triggers.manual-resolve.inputs.disputeId)"
+      # Injected secrets (CRE HSM — never logged)
+      secrets:
+        anthropicKey: "${ANTHROPIC_API_KEY}"
+        openaiKey: "${OPENAI_API_KEY}"
+        mistralKey: "${MISTRAL_API_KEY}"
+        operatorPrivKey: "${OPERATOR_PRIVATE_KEY}"
+        evidenceKey: "${EVIDENCE_SERVER_KEY}"
+        rpcUrl: "${RPC_URL}"
+      # Environment
+      env:
+        registryContract: "${ARBITRATION_REGISTRY_ADDRESS}"
+        verifierContract: "${CRE_VERIFIER_ADDRESS}"
+        evidenceServerUrl: "${EVIDENCE_SERVER_URL}"
+        chainId: "11155111"
+    outputs:
+      # Encoded calldata for CREVerifier.submitVerdict(verdict, signature)
+      calldata: "$.calldata"
+      # Human-readable verdict for workflow execution logs
+      verdictSummary: "$.verdictSummary"
+      # disputeId of the resolved dispute
+      disputeId: "$.disputeId"
+
+  # ── Step 3: Write verdict on-chain ────────────────────────────────────────
+  - id: submit-verdict-onchain
+    type: "eth-transaction@1.0.0"
+    dependsOn: [resolve-dispute]
+    # Skip if no disputes were processed
+    condition: "$(steps.resolve-dispute.disputeId) != null"
+    config:
+      address: "${CRE_VERIFIER_ADDRESS}"
+      chainId: "11155111"
+      gasLimit: 500000
+      # The calldata is pre-encoded by the compute step (ABI-encoded submitVerdict call)
+      # This includes the full verdict struct + ECDSA signature from operator key
+      data: "$(steps.resolve-dispute.calldata)"
+      # Retry logic for network issues
+      maxRetries: 3
+      retryDelay: 5000
+
+# ── Error Handling ───────────────────────────────────────────────────────────
+onError:
+  # If the compute step fails entirely, emit an event for monitoring
+  - trigger: "$(steps.resolve-dispute)"
+    action: "log"
+    message: "CRE workflow failed for dispute $(steps.resolve-dispute.disputeId): $(error.message)"
+    # In production: also trigger PagerDuty / alert

@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Foundry build artifacts
+contracts/out/
+contracts/cache/
+contracts/broadcast/
+
+# Frontend build
+frontend/dist/
+frontend/.vercel/
+
+# Misc
+.DS_Store
+*.log
+npm-debug.log*

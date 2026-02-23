@@ -1,0 +1,25 @@
+{
+  "name": "arbitrai-cre-workflow",
+  "version": "1.0.0",
+  "description": "Chainlink CRE workflow for ArbitrAI multi-model AI dispute resolution",
+  "type": "module",
+  "scripts": {
+    "build": "tsc && node scripts/bundle.mjs",
+    "build:wasm": "javy compile dist/index.js -o dist/index.wasm",
+    "simulate": "npx tsx src/index.ts",
+    "test": "npx vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "@noble/curves": "^1.7.0",
+    "@noble/hashes": "^1.7.0",
+    "openai": "^4.77.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.0.0"
+  }
+}
