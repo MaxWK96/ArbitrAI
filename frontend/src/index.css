@@ -1,12 +1,72 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* ─── Design tokens (shadcn/ui + gold/granite theme) ─────────────────────── */
 @layer base {
+  :root {
+    --background: 220 12% 9%;
+    --foreground: 40 15% 88%;
+
+    --card: 220 12% 12%;
+    --card-foreground: 40 15% 88%;
+
+    --popover: 220 12% 12%;
+    --popover-foreground: 40 15% 88%;
+
+    --primary: 45 88% 52%;
+    --primary-foreground: 220 15% 8%;
+
+    --secondary: 220 10% 16%;
+    --secondary-foreground: 40 15% 85%;
+
+    --muted: 220 10% 18%;
+    --muted-foreground: 220 10% 52%;
+
+    --accent: 45 88% 52%;
+    --accent-foreground: 220 15% 8%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 220 10% 20%;
+    --input: 220 10% 20%;
+    --ring: 45 88% 52%;
+
+    --radius: 0.5rem;
+
+    --gold: 45 88% 52%;
+    --gold-dim: 45 60% 38%;
+    --gold-glow: 45 90% 62%;
+    --granite: 220 12% 9%;
+    --granite-light: 220 10% 14%;
+    --granite-lighter: 220 8% 22%;
+
+    --sidebar-background: 220 12% 9%;
+    --sidebar-foreground: 40 15% 88%;
+    --sidebar-primary: 45 88% 52%;
+    --sidebar-primary-foreground: 220 15% 8%;
+    --sidebar-accent: 220 10% 16%;
+    --sidebar-accent-foreground: 40 15% 88%;
+    --sidebar-border: 220 10% 20%;
+    --sidebar-ring: 45 88% 52%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
   body {
-    @apply bg-gray-950 text-gray-100 antialiased;
+    @apply bg-background text-foreground antialiased;
     font-family: 'Inter', system-ui, sans-serif;
-    background-image: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(59,99,248,0.07), transparent);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Playfair Display', serif;
   }
 
   ::-webkit-scrollbar        { width: 4px; height: 4px; }
@@ -17,14 +77,37 @@
   * { @apply selection:bg-brand-800 selection:text-white; }
 }
 
+/* ─── Typography utilities ───────────────────────────────────────────────── */
+@layer utilities {
+  .font-display {
+    font-family: 'Playfair Display', serif;
+  }
+  .font-body {
+    font-family: 'Inter', sans-serif;
+  }
+  .text-gold-gradient {
+    background: linear-gradient(135deg, hsl(45 90% 62%), hsl(45 88% 52%), hsl(40 70% 42%));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .glow-gold {
+    box-shadow: 0 0 30px -5px hsl(45 88% 52% / 0.25);
+  }
+  .border-gold-subtle {
+    border-color: hsl(45 60% 38% / 0.3);
+  }
+}
+
+/* ─── Functional-page component classes (CreateDispute, Dispute, Demo) ───── */
 @layer components {
-  /* ── Cards ── */
+  /* Cards */
   .card       { @apply bg-gray-900/80 border border-gray-800 rounded-xl p-5 backdrop-blur-sm; }
   .card-sm    { @apply bg-gray-900/80 border border-gray-800 rounded-lg p-4 backdrop-blur-sm; }
   .card-glow  { @apply bg-gray-900/80 border border-brand-800/60 rounded-xl p-5 shadow-[0_0_30px_rgba(59,99,248,0.07)] backdrop-blur-sm; }
   .card-tee   { @apply bg-purple-950/20 border border-purple-800/40 rounded-xl p-4; }
 
-  /* ── Buttons ── */
+  /* Buttons */
   .btn-primary   {
     @apply bg-brand-600 hover:bg-brand-500 active:bg-brand-700 text-white font-semibold
            px-5 py-2.5 rounded-lg transition-all duration-150
@@ -45,7 +128,7 @@
            px-5 py-2.5 rounded-lg transition-all border border-red-800/60;
   }
 
-  /* ── Badges ── */
+  /* Badges */
   .badge        { @apply inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold; }
   .badge-green  { @apply bg-green-950/60  text-green-400  border border-green-800/60; }
   .badge-red    { @apply bg-red-950/60    text-red-400    border border-red-800/60; }
@@ -55,7 +138,7 @@
   .badge-gray   { @apply bg-gray-800/60   text-gray-400   border border-gray-700; }
   .badge-brand  { @apply bg-brand-950/60  text-brand-400  border border-brand-800/60; }
 
-  /* ── Form ── */
+  /* Form */
   .input {
     @apply bg-gray-800/60 border border-gray-700 rounded-lg px-4 py-2.5
            text-gray-100 placeholder-gray-500 w-full
@@ -64,25 +147,24 @@
   }
   .label { @apply block text-sm font-medium text-gray-300 mb-1.5; }
 
-  /* ── Typography ── */
+  /* Typography */
   .mono          { font-family: 'JetBrains Mono', 'Fira Code', monospace; }
   .gradient-text { @apply bg-gradient-to-r from-brand-400 to-purple-400 bg-clip-text text-transparent; }
   .section-title { @apply text-xs font-bold uppercase tracking-widest text-gray-500 mb-3; }
 
-  /* ── Step dots ── */
+  /* Step dots */
   .step-dot-done    { @apply w-5 h-5 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0; }
   .step-dot-running { @apply w-5 h-5 rounded-full border-2 border-brand-500 border-t-transparent animate-spin flex-shrink-0; }
   .step-dot-pending { @apply w-5 h-5 rounded-full border border-gray-700 flex-shrink-0; }
 
-  /* ── Chainlink branding ── */
+  /* Chainlink branding */
   .chainlink-tag {
     @apply inline-flex items-center gap-1.5 bg-blue-950/40 border border-blue-800/50
            rounded-md px-2.5 py-1 text-xs text-blue-300 font-medium;
   }
 }
 
-/* ── Animations ── */
-
+/* ─── Animations ─────────────────────────────────────────────────────────── */
 @keyframes slide-up {
   from { opacity: 0; transform: translateY(10px); }
   to   { opacity: 1; transform: translateY(0); }
