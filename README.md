@@ -208,3 +208,38 @@ ArbitrAI/
 ├── deployment-addresses.md All contract addresses + E2E tx hashes
 └── setup-env.sh            Auto-configure all .env files post-deploy
 ```
+
+---
+
+## Chainlink Integration Files
+
+Every file in this repository that directly uses a Chainlink service.
+
+### CRE — Workflow Execution
+
+- [`cre-workflow/workflow.yaml`](https://github.com/MaxWK96/ArbitrAI/blob/main/cre-workflow/workflow.yaml) — CRE workflow manifest: declares `http-confidential@1.0.0`, `http@1.0.0`, and `eth-transaction-writer@1.0.0` capabilities; defines cron + manual triggers and the 3-step pipeline
+- [`cre-workflow/src/index.ts`](https://github.com/MaxWK96/ArbitrAI/blob/main/cre-workflow/src/index.ts) — CRE WASM entry point: orchestrates the full arbitration pipeline (read dispute → fetch evidence → query AI models → consensus → sign verdict → submit on-chain)
+- [`cre-workflow/src/evidence.ts`](https://github.com/MaxWK96/ArbitrAI/blob/main/cre-workflow/src/evidence.ts) — CRE Confidential HTTP: fetches encrypted dispute evidence inside the TEE; verifies `keccak256(content)` matches the hash committed on-chain
+- [`cre-workflow/src/models.ts`](https://github.com/MaxWK96/ArbitrAI/blob/main/cre-workflow/src/models.ts) — CRE HTTP capability: calls Claude Opus 4.6, GPT-4o, and Mistral Large in parallel using base64-encoded POST bodies; parses structured verdict responses
+- [`cre-workflow/src/consensus.ts`](https://github.com/MaxWK96/ArbitrAI/blob/main/cre-workflow/src/consensus.ts) — CRE: implements 2/3 threshold consensus logic across the three AI model votes; emits `NO_CONSENSUS` or `CIRCUIT_BREAKER` when threshold is not met
+- [`cre-workflow/src/signer.ts`](https://github.com/MaxWK96/ArbitrAI/blob/main/cre-workflow/src/signer.ts) — CRE: ECDSA-signs the `WorkflowVerdict` struct with the CRE operator key using pure-JS secp256k1 (WASM-compatible, no Node.js crypto)
+- [`cre-workflow/src/chain.ts`](https://github.com/MaxWK96/ArbitrAI/blob/main/cre-workflow/src/chain.ts) — CRE Ethereum Transaction Writer: ABI-encodes `submitVerdict()` calldata and broadcasts the on-chain settlement transaction via JSON-RPC
+
+### CRE — Smart Contract Trust Bridge
+
+- [`contracts/src/CREVerifier.sol`](https://github.com/MaxWK96/ArbitrAI/blob/main/contracts/src/CREVerifier.sol) — CRE verdict execution: verifies the CRE operator ECDSA signature, enforces staleness (< 1 hour), replay protection, and evidence hash integrity before triggering escrow settlement
+- [`contracts/src/DisputeEscrow.sol`](https://github.com/MaxWK96/ArbitrAI/blob/main/contracts/src/DisputeEscrow.sol) — CRE-gated fund release: `executeVerdict()` and `executeRefund()` are `onlyCREVerifier` — no admin key can release funds without a valid CRE signature
+- [`contracts/src/ArbitrationRegistry.sol`](https://github.com/MaxWK96/ArbitrAI/blob/main/contracts/src/ArbitrationRegistry.sol) — CRE audit trail: records evidence hashes, per-model votes with confidence scores, and the `workflowOutputHash` permanently on-chain
+- [`contracts/src/interfaces/IArbitrationRegistry.sol`](https://github.com/MaxWK96/ArbitrAI/blob/main/contracts/src/interfaces/IArbitrationRegistry.sol) — interface consumed by CREVerifier to write state transitions
+- [`contracts/src/interfaces/IDisputeEscrow.sol`](https://github.com/MaxWK96/ArbitrAI/blob/main/contracts/src/interfaces/IDisputeEscrow.sol) — interface consumed by CREVerifier to trigger fund settlement
+- [`contracts/script/Deploy.s.sol`](https://github.com/MaxWK96/ArbitrAI/blob/main/contracts/script/Deploy.s.sol) — Foundry deploy script: deploys DisputeEscrow, ArbitrationRegistry, and CREVerifier atomically and wires them together
+
+### CRE — Confidential HTTP Target (Evidence Server)
+
+- [`evidence-server/src/server.ts`](https://github.com/MaxWK96/ArbitrAI/blob/main/evidence-server/src/server.ts) — the private evidence store that CRE fetches via Confidential HTTP inside the TEE; stores evidence AES-256-GCM encrypted at rest; never accessible to any party other than CRE
+
+### CRE — Frontend Integration
+
+- [`frontend/src/lib/contracts.ts`](https://github.com/MaxWK96/ArbitrAI/blob/main/frontend/src/lib/contracts.ts) — deployed contract addresses and ABIs for CREVerifier, ArbitrationRegistry, and DisputeEscrow; used by all functional pages
+- [`frontend/src/pages/DemoPage.tsx`](https://github.com/MaxWK96/ArbitrAI/blob/main/frontend/src/pages/DemoPage.tsx) — interactive CRE workflow demo: simulates the full 7-step lifecycle with animated step reveals and a What-If Explorer showing how changing one model's vote affects consensus outcome
+- [`frontend/src/lib/cre/consensus.ts`](https://github.com/MaxWK96/ArbitrAI/blob/main/frontend/src/lib/cre/consensus.ts) — frontend mirror of the CRE consensus engine used by the What-If Explorer to compute hypothetical verdicts client-side
