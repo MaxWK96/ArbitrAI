@@ -40,7 +40,7 @@ import { fetchBothEvidences, fetchDisputeFromChain } from './evidence.js';
 import { queryAllModels } from './models.js';
 import { applyConsensus } from './consensus.js';
 import { signVerdict } from './signer.js';
-import { buildWorkflowOutput, submitVerdictOnChain } from './chain.js';
+import { buildWorkflowOutput, broadcastCalldata } from './chain.js';
 import { bytesToHex } from '@noble/hashes/utils';
 import { keccak_256 } from '@noble/hashes/sha3';
 
@@ -316,12 +316,13 @@ async function main(): Promise<void> {
   // In CRE: write output for Ethereum Transaction Writer
   writeOutput(output);
 
-  // In local mode: also submit on-chain directly
+  // In local mode: broadcast the pre-encoded calldata directly.
+  // Uses output.calldata (already signed and ABI-encoded by the compute step)
+  // to avoid re-encoding with stale/empty fields.
   if (process.env.SUBMIT_ONCHAIN === 'true') {
     const chainId = parseInt(env.chainId, 10);
-    const txHash = await submitVerdictOnChain(
-      // Reconstruct verdict from output for direct submission
-      {} as WorkflowVerdict,  // In real flow, verdict is already in memory
+    const txHash = await broadcastCalldata(
+      output.calldata,
       env.verifierContract,
       secrets.operatorPrivKey,
       secrets.rpcUrl,

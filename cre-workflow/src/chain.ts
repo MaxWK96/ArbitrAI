@@ -245,6 +245,71 @@ export async function submitVerdictOnChain(
 }
 
 /**
+ * Broadcast pre-encoded calldata to the network.
+ * Used by the local simulation path (SUBMIT_ONCHAIN=true) to send the
+ * already-signed calldata from buildWorkflowOutput without re-signing.
+ *
+ * Bug fix: index.ts previously passed {} as WorkflowVerdict to submitVerdictOnChain,
+ * producing a transaction with zeroed fields. This function takes the calldata
+ * produced by the compute step directly, avoiding re-encoding entirely.
+ */
+export async function broadcastCalldata(
+  calldata: string,
+  verifierContract: string,
+  operatorPrivKey: string,
+  rpcUrl: string,
+  chainId: number,
+  httpFetch: HttpFetchFn
+): Promise<string> {
+  const privKeyBytes = hexToBytes(operatorPrivKey.replace('0x', ''));
+  const pubKey = secp256k1.getPublicKey(privKeyBytes, false);
+  const pubKeyHash = keccak_256(pubKey.slice(1));
+  const operatorAddress = '0x' + bytesToHex(pubKeyHash).slice(24);
+
+  const [nonce, gasPrice] = await Promise.all([
+    getNonce(operatorAddress, rpcUrl, httpFetch),
+    getGasPrice(rpcUrl, httpFetch),
+  ]);
+
+  const tx: UnsignedTx = {
+    nonce,
+    gasPrice,
+    gasLimit: 500_000n,
+    to: verifierContract,
+    data: calldata,
+    chainId,
+  };
+
+  const rawTx = signTransaction(tx, operatorPrivKey);
+
+  const broadcastBody = JSON.stringify({
+    jsonrpc: '2.0',
+    id: 1,
+    method: 'eth_sendRawTransaction',
+    params: [rawTx],
+  });
+
+  const response = await httpFetch({
+    method: 'POST',
+    url: rpcUrl,
+    headers: { 'content-type': 'application/json' },
+    body: Buffer.from(broadcastBody).toString('base64'),
+  });
+
+  const text = Buffer.from(response.body).toString('utf-8');
+  const json = JSON.parse(text) as { result?: string; error?: { message: string } };
+
+  if (json.error) {
+    throw new Error(`Broadcast failed: ${json.error.message}`);
+  }
+
+  const txHash = json.result!;
+  console.log(`[chain] Verdict submitted! TxHash: ${txHash}`);
+  console.log(`[chain] Etherscan: https://sepolia.etherscan.io/tx/${txHash}`);
+  return txHash;
+}
+
+/**
  * Build WorkflowOutput for the CRE Ethereum Transaction Writer.
  * The CRE runtime uses the calldata from this output to submit the transaction.
  */

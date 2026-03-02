@@ -19,7 +19,9 @@
  */
 
 import { createServer, IncomingMessage, ServerResponse } from 'http';
-import { createHash, createCipheriv, createDecipheriv, randomBytes } from 'crypto';
+import { createCipheriv, createDecipheriv, randomBytes } from 'crypto';
+import { keccak_256 } from '@noble/hashes/sha3';
+import { bytesToHex } from '@noble/hashes/utils';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -86,9 +88,7 @@ function decrypt(encrypted: string, iv: string, authTag: string, key: Buffer): s
 }
 
 function keccak256(content: string): string {
-  // Using sha256 here for Node.js compatibility (keccak256 needs a library)
-  // In production: use ethers.js keccak256 to match on-chain values
-  return '0x' + createHash('sha256').update(content).digest('hex');
+  return '0x' + bytesToHex(keccak_256(new TextEncoder().encode(content)));
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

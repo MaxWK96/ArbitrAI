@@ -8,10 +8,11 @@ node_modules/
 .env.local
 .env.*.local
 
-# Foundry build artifacts
+# Foundry build artifacts + dependencies (run `forge install` to restore)
 contracts/out/
 contracts/cache/
 contracts/broadcast/
+contracts/lib/
 
 # Frontend build
 frontend/dist/

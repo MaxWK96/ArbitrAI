@@ -10,11 +10,11 @@ Trustless freelance dispute resolution. Two parties lock ETH in escrow, submit p
 
 | Contract | Address | Etherscan |
 |---|---|---|
-| DisputeEscrow | `0x97D02A149aAEB0C60f6DFc335d944f84dCFD9ec7` | [view](https://sepolia.etherscan.io/address/0x97D02A149aAEB0C60f6DFc335d944f84dCFD9ec7) |
-| ArbitrationRegistry | `0xFF8DaeC3aEC58Ec1D2F48e94d4421783478cd8B5` | [view](https://sepolia.etherscan.io/address/0xFF8DaeC3aEC58Ec1D2F48e94d4421783478cd8B5) |
-| CREVerifier | `0x18b34E31290Ac10dE263943cD9D617EE1f570133` | [view](https://sepolia.etherscan.io/address/0x18b34E31290Ac10dE263943cD9D617EE1f570133) |
+| DisputeEscrow | `0x4829dB4D2f4161BE292D51e1FDc5fe8B08b0bc16` | [view](https://sepolia.etherscan.io/address/0x4829dB4D2f4161BE292D51e1FDc5fe8B08b0bc16) |
+| ArbitrationRegistry | `0x2c4aa262a89C3559A4764e52E2f50b9cDacE395F` | [view](https://sepolia.etherscan.io/address/0x2c4aa262a89C3559A4764e52E2f50b9cDacE395F) |
+| CREVerifier | `0xAa99Aa0F7C2C5A010f685002AD5F166271ac3a3b` | [view](https://sepolia.etherscan.io/address/0xAa99Aa0F7C2C5A010f685002AD5F166271ac3a3b) |
 
-Both E2E scenarios verified on Sepolia — see `deployment-addresses.md` for transaction details.
+Both E2E scenarios verified on Sepolia (2026-03-02) — `submitVerdict` Scenario A: [`0x6afb5848...`](https://sepolia.etherscan.io/tx/0x6afb5848100fb7ae4f0e9e390715eda1b399a941237f2b7afeb9e7c570982af2), Scenario B: [`0xef94cbdc...`](https://sepolia.etherscan.io/tx/0xef94cbdc31ea5971f19d5fb85a4b5562335aabe8a32070f8ebe8f666e55e4a95) — full tx table in `deployment-addresses.md`.
 
 ---
 
