@@ -38,7 +38,7 @@ Trust bridge between Chainlink CRE and escrow settlement. Verifies ECDSA operato
 ## E2E Test Transactions (Sepolia) — 2026-03-02
 
 ### Scenario A — Happy Path (Alice wins, 3/3 consensus)
-- **Dispute ID**: derived at broadcast time
+- **Dispute ID**: `0x2c4c798cbe05c34f71e541789a06e2fa1e8dac39c36636b1c47ebf3af6df1765`
 - Party A (Alice): `0xaC266469bB463Ec83E2D6845e513d47B191739B0`
 - Party B (Bob): `0xEe6cadE823BB01321Fa753FC0E89bd9402A04Dd7`
 - Outcome: FAVOR_PARTY_A — Alice received 0.0198 ETH (0.02 pool - 1% fee)

@@ -6,6 +6,48 @@ Trustless freelance dispute resolution. Two parties lock ETH in escrow, submit p
 
 ---
 
+## The problem your project addresses
+
+Freelance and B2B disputes have no neutral trustee. Platforms like Upwork are biased toward buyers; legal arbitration costs more than most disputed amounts; human arbitrators are slow (weeks to months) and leave no verifiable record. The result is a power imbalance — the party with more leverage wins by default, not on merit.
+
+Three specific failure modes that existing solutions cannot fix:
+
+1. **Evidence is visible to the arbitrator and platform** — either party can be coerced or the arbitrator bribed
+2. **No cryptographic link between reasoning and outcome** — a human can settle without ever reading the evidence
+3. **Funds require a trusted third party to release** — escrow services have admin keys; one compromised key loses all funds
+
+---
+
+## How you've addressed the problem
+
+ArbitrAI removes the trusted third party entirely. Funds are locked in a smart contract that can only be unlocked by a cryptographic proof that a verifiable AI process ran and reached consensus.
+
+- **Escrow with no admin key**: `executeVerdict()` and `executeRefund()` are `onlyCREVerifier`. No owner, no multisig, no override. Funds are mathematically locked until CRE acts.
+- **Private evidence**: Evidence is stored AES-256-GCM encrypted. The CRE workflow fetches it via Confidential HTTP inside a TEE — content never touches a public log. Only the `keccak256` hash is on-chain.
+- **Three independent AI votes**: Claude Opus 4.6, GPT-4o, and Mistral Large each analyze the same evidence independently. 2/3 consensus is required; a split triggers a full refund with no fee.
+- **Immutable audit trail**: Every model vote, confidence score, evidence hash, and `workflowOutputHash` is recorded permanently in `ArbitrationRegistry`. Anyone can verify the link between the AI reasoning and the on-chain settlement.
+
+---
+
+## How you've used CRE
+
+CRE is not an integration — it is the **only execution path** that can settle a dispute. The `CREVerifier` contract accepts exactly one input: a `WorkflowVerdict` struct with a valid ECDSA signature from the CRE operator key. That key never leaves the CRE HSM.
+
+The workflow (`cre-workflow/workflow.yaml` + `src/index.ts`) runs inside the Chainlink DON and:
+
+1. **Polls** `ArbitrationRegistry` for disputes in `IN_ARBITRATION` state (cron trigger, every 5 min)
+2. **Fetches evidence** via `http-confidential@1.0.0` — the TEE capability that keeps request/response out of execution logs
+3. **Queries** Claude, GPT-4o, and Mistral in parallel using `http@1.0.0`; verifies `keccak256(content)` matches the hash committed on-chain before sending to any model
+4. **Applies 2/3 consensus** — `CIRCUIT_BREAKER` on any API failure, `NO_CONSENSUS` if models split
+5. **Signs** the `WorkflowVerdict` struct with secp256k1 using the operator key (pure-JS, WASM-compatible)
+6. **Submits** the signed verdict via `eth-transaction-writer@1.0.0` → `CREVerifier.submitVerdict()`
+
+`CREVerifier` then verifies the ECDSA signature, checks staleness (< 1 hour), enforces replay protection, and verifies the evidence hashes match what was submitted on-chain before releasing escrow funds.
+
+**Why CRE specifically?** The operator key signs inside the TEE. A regular off-chain process could fabricate a verdict by signing with a compromised key. CRE's verifiable execution environment is the only way to cryptographically prove that the AI models actually ran and produced the verdict that unlocked the funds.
+
+---
+
 ## Live on Sepolia
 
 | Contract | Address | Etherscan |
@@ -147,7 +189,10 @@ npm start              # runs on port 3002
 ```bash
 cd cre-workflow
 npm install
-DISPUTE_ID=0x... npm run simulate
+cp .env.example .env   # fill in API keys + contract addresses
+# Simulate against the live Sepolia Scenario A dispute (already settled — read-only demo):
+DISPUTE_ID=0x2c4c798cbe05c34f71e541789a06e2fa1e8dac39c36636b1c47ebf3af6df1765 npm run simulate
+# To broadcast a verdict on-chain, also set SUBMIT_ONCHAIN=true in .env
 ```
 
 ### 4. Frontend
