@@ -1,4 +1,5 @@
 import { Play, PlusCircle } from "lucide-react";
+import { Link } from "react-router-dom";
 import DisputeLifecycle from "./DisputeLifecycle";
 
 const HeroSection = () => {
@@ -32,20 +33,20 @@ const HeroSection = () => {
 
         {/* CTAs */}
         <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-          <a
-            href="/demo"
+          <Link
+            to="/demo"
             className="glow-gold inline-flex items-center gap-2.5 rounded-lg bg-primary px-7 py-3.5 font-body text-sm font-semibold text-primary-foreground transition-all hover:brightness-110"
           >
             <Play className="h-4 w-4" />
             Watch Live Demo
-          </a>
-          <a
-            href="/create"
+          </Link>
+          <Link
+            to="/create"
             className="inline-flex items-center gap-2 rounded-lg border border-border bg-secondary px-7 py-3.5 font-body text-sm font-medium text-secondary-foreground transition-colors hover:bg-muted"
           >
             <PlusCircle className="h-4 w-4" />
             Create a Dispute
-          </a>
+          </Link>
         </div>
         <p className="mt-4 font-body text-xs text-muted-foreground">
           Full CRE workflow on Sepolia in under 60 seconds.

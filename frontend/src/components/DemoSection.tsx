@@ -1,4 +1,5 @@
 import { Play, ArrowRight } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const DemoSection = () => {
   return (
@@ -31,20 +32,20 @@ const DemoSection = () => {
           </div>
 
           <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-            <a
-              href="/demo"
+            <Link
+              to="/demo"
               className="glow-gold inline-flex items-center gap-2.5 rounded-lg bg-primary px-8 py-4 font-body text-sm font-semibold text-primary-foreground transition-all hover:brightness-110"
             >
               <Play className="h-4 w-4" />
               Launch Interactive Demo
-            </a>
-            <a
-              href="/create"
+            </Link>
+            <Link
+              to="/create"
               className="inline-flex items-center gap-2 font-body text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
               Or create a real dispute
               <ArrowRight className="h-4 w-4" />
-            </a>
+            </Link>
           </div>
         </div>
       </div>
