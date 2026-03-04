@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "simulate": "cd cre-workflow && npm run simulate",
-    "simulate:broadcast": "cd cre-workflow && npm run simulate -- --broadcast"
+    "simulate:broadcast": "cd cre-workflow && npm run simulate -- --broadcast",
+    "simulate:demo": "node scripts/simulate-demo.mjs"
   }
 }

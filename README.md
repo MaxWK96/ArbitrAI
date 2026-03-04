@@ -207,6 +207,74 @@ Run `bash setup-env.sh` after deployment to configure all `.env` files automatic
 
 ---
 
+## Running the Full Demo
+
+A single command starts the evidence server, seeds the demo dispute with real evidence, and runs all 6 CRE workflow steps end-to-end — showing real AI verdicts from Claude, GPT-4o, and Mistral.
+
+### Prerequisites
+
+- Node.js 20+
+- Real API keys for Anthropic, OpenAI, and Mistral (free tiers work)
+- `npm install` run in both `cre-workflow/` and `evidence-server/`
+
+### Setup (one-time)
+
+```bash
+# Install dependencies
+cd cre-workflow && npm install && cd ..
+cd evidence-server && npm install && cd ..
+
+# Configure environment
+cp cre-workflow/.env.example cre-workflow/.env
+# Then open cre-workflow/.env and fill in:
+#   ANTHROPIC_API_KEY=sk-ant-...
+#   OPENAI_API_KEY=sk-...
+#   MISTRAL_API_KEY=...
+# (all other values are pre-filled with the live Sepolia deployment)
+```
+
+### Run
+
+```bash
+npm run simulate:demo
+```
+
+This single command:
+1. Validates that real API keys are present (exits with a clear error if placeholders remain)
+2. Starts the evidence server on port 3002
+3. Seeds demo evidence for both parties in the live Sepolia dispute (`0x0442170...`)
+4. Runs the full 6-step CRE workflow against the Sepolia contracts
+5. Shows each model's verdict, confidence score, consensus result, and the signed `WorkflowVerdict`
+6. Shuts down the evidence server on exit
+
+Expected output (with real keys):
+
+```
+[demo] API keys found for: Anthropic, OpenAI, Mistral
+[demo] Dispute: 0x0442170ea59ff899df64464d8e0be7601eaa53ada5bd924c90a221f544284ec0
+[demo] Starting evidence server...
+[demo] Evidence server ready
+
+[demo] Seeding demo evidence...
+  [demo] Party A stored — hash: 0x7b9e3a1f2c...
+  [demo] Party B stored — hash: 0x4f2d8a0e1b...
+[demo] Evidence seeded — hashes match on-chain commitments
+
+Step 1: Fetching dispute from chain...       ✓ IN_ARBITRATION
+Step 2: Fetching evidence via Confidential HTTP...  ✓ both parties
+Step 3: Querying AI models in parallel...
+  Claude Opus 4.6   → PARTY_A  (8500 bps)
+  GPT-4o            → PARTY_A  (9100 bps)
+  Mistral Large     → PARTY_A  (7800 bps)
+Step 4: Applying 2/3 consensus...            ✓ PARTY_A wins
+Step 5: Signing WorkflowVerdict...           ✓ signed
+Step 6: Verdict ready (SUBMIT_ONCHAIN=false, skipping broadcast)
+```
+
+To submit the verdict on-chain: set `SUBMIT_ONCHAIN=true` in `cre-workflow/.env`, then run `npm run simulate:demo`.
+
+---
+
 ## Test Results
 
 ```
