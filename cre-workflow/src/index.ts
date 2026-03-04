@@ -319,7 +319,7 @@ async function main(): Promise<void> {
   // In local mode: broadcast the pre-encoded calldata directly.
   // Uses output.calldata (already signed and ABI-encoded by the compute step)
   // to avoid re-encoding with stale/empty fields.
-  if (process.env.SUBMIT_ONCHAIN === 'true') {
+  if (process.env.SUBMIT_ONCHAIN === 'true' || process.argv.includes('--broadcast')) {
     const chainId = parseInt(env.chainId, 10);
     const txHash = await broadcastCalldata(
       output.calldata,

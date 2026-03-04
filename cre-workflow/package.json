@@ -6,7 +6,7 @@
   "scripts": {
     "build": "tsc && node scripts/bundle.mjs",
     "build:wasm": "javy compile dist/index.js -o dist/index.wasm",
-    "simulate": "npx tsx src/index.ts",
+    "simulate": "npx tsx --env-file=.env src/index.ts",
     "test": "npx vitest run",
     "typecheck": "tsc --noEmit"
   },

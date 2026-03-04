@@ -19,6 +19,7 @@
 
 import type { Evidence, DisputeRecord } from './types.js';
 import type { HttpFetchFn } from './models.js';
+import { decodeAbiParameters } from 'viem';
 
 /** keccak256 implementation using @noble/hashes (pure JS, WASM-compatible) */
 import { keccak_256 } from '@noble/hashes/sha3';
@@ -46,7 +47,7 @@ export async function fetchDisputeFromChain(
 ): Promise<DisputeRecord> {
   // ABI encode call to getDispute(bytes32)
   // Function selector: keccak256("getDispute(bytes32)")[0:4]
-  const selector = '0x6000a5dc'; // getDispute(bytes32)
+  const selector = '0x136ba6aa'; // getDispute(bytes32)
   const paddedDisputeId = disputeId.replace('0x', '').padStart(64, '0');
   const calldata = selector + paddedDisputeId;
 
@@ -82,59 +83,48 @@ export async function fetchDisputeFromChain(
   return decodeDisputeRecord(rpcResponse.result ?? '0x', disputeId);
 }
 
+const DISPUTE_RECORD_ABI = [
+  {
+    type: 'tuple',
+    components: [
+      { name: 'id',                 type: 'bytes32'  },
+      { name: 'partyA',             type: 'address'  },
+      { name: 'partyB',             type: 'address'  },
+      { name: 'amount',             type: 'uint256'  },
+      { name: 'status',             type: 'uint8'    },
+      { name: 'evidenceHashA',      type: 'bytes32'  },
+      { name: 'evidenceHashB',      type: 'bytes32'  },
+      { name: 'workflowOutputHash', type: 'bytes32'  },
+      { name: 'createdAt',          type: 'uint256'  },
+      { name: 'settledAt',          type: 'uint256'  },
+      { name: 'winner',             type: 'address'  },
+      { name: 'description',        type: 'string'   },
+    ],
+  },
+] as const;
+
+const STATUS_MAP: Record<number, string> = {
+  0: 'NONE', 1: 'PENDING', 2: 'ACTIVE', 3: 'IN_ARBITRATION',
+  4: 'SETTLED', 5: 'REFUNDED', 6: 'ESCALATED',
+};
+
 /**
- * Simple ABI decoder for DisputeRecord tuple.
- * Decodes the on-chain struct returned by getDispute(bytes32).
+ * Decode the ABI-encoded DisputeRecord tuple returned by getDispute(bytes32).
+ * Uses viem decodeAbiParameters for exact, correct ABI decoding.
  */
 function decodeDisputeRecord(encoded: string, disputeId: string): DisputeRecord {
-  // Strip 0x prefix
-  const hex = encoded.replace('0x', '');
-
-  if (hex.length < 64 * 10) {
-    throw new Error(`Response too short to decode DisputeRecord: ${hex.length} chars`);
-  }
-
-  // ABI struct fields (each 32 bytes = 64 hex chars):
-  // [0]  id (bytes32)
-  // [1]  partyA (address, left-padded)
-  // [2]  partyB (address, left-padded)
-  // [3]  amount (uint256)
-  // [4]  status (uint8)
-  // [5]  evidenceHashA (bytes32)
-  // [6]  evidenceHashB (bytes32)
-  // [7]  workflowOutputHash (bytes32)
-  // [8]  createdAt (uint256)
-  // [9]  settledAt (uint256)
-  // [10] winner (address, left-padded)
-  // [11+] description (string — dynamic)
-
-  const slot = (i: number) => hex.slice(i * 64, (i + 1) * 64);
-
-  const readAddress = (i: number) => '0x' + slot(i).slice(24).toLowerCase();
-  const readBytes32 = (i: number) => '0x' + slot(i);
-  const readUint = (i: number) => parseInt(slot(i), 16);
-
-  const statusMap: Record<number, string> = {
-    0: 'NONE', 1: 'PENDING', 2: 'ACTIVE', 3: 'IN_ARBITRATION',
-    4: 'SETTLED', 5: 'REFUNDED', 6: 'ESCALATED',
-  };
-
-  // Description is dynamic — simplified: read offset and length
-  const descOffset = readUint(11) / 32;
-  const descLength = readUint(descOffset);
-  const descHex = hex.slice((descOffset + 1) * 64, (descOffset + 1) * 64 + descLength * 2);
-  const description = Buffer.from(descHex, 'hex').toString('utf-8');
+  const [record] = decodeAbiParameters(DISPUTE_RECORD_ABI, encoded as `0x${string}`);
 
   return {
-    id: readBytes32(0),
-    partyA: readAddress(1),
-    partyB: readAddress(2),
-    amount: slot(3),
-    status: statusMap[readUint(4)] ?? 'UNKNOWN',
-    evidenceHashA: readBytes32(5),
-    evidenceHashB: readBytes32(6),
-    createdAt: readUint(8),
-    description,
+    id:            record.id,
+    partyA:        record.partyA.toLowerCase(),
+    partyB:        record.partyB.toLowerCase(),
+    amount:        record.amount.toString(),
+    status:        STATUS_MAP[record.status] ?? 'UNKNOWN',
+    evidenceHashA: record.evidenceHashA,
+    evidenceHashB: record.evidenceHashB,
+    createdAt:     Number(record.createdAt),
+    description:   record.description,
   };
 }
 

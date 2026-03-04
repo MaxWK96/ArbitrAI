@@ -19,7 +19,7 @@
  */
 
 import { createServer, IncomingMessage, ServerResponse } from 'http';
-import { createCipheriv, createDecipheriv, randomBytes } from 'crypto';
+import { createHash, createCipheriv, createDecipheriv, randomBytes } from 'crypto';
 import { keccak_256 } from '@noble/hashes/sha3';
 import { bytesToHex } from '@noble/hashes/utils';
 
