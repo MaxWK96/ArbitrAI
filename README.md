@@ -2,6 +2,8 @@
 
 > Chainlink Convergence Hackathon 2026
 
+**[Watch the demo on YouTube](https://www.youtube.com/watch?v=VYLM7GfIGMY)**
+
 Trustless freelance dispute resolution. Two parties lock ETH in escrow, submit private evidence via Chainlink Confidential HTTP, and three AI models (Claude, GPT-4o, Mistral) independently analyze it. 2/3 consensus releases funds to the winner. No human arbitrator. No admin key. No way to skip CRE.
 
 ---
@@ -30,6 +32,8 @@ ArbitrAI removes the trusted third party entirely. Funds are locked in a smart c
 ---
 
 ## How you've used CRE
+
+**[Watch the full CRE workflow in action →](https://www.youtube.com/watch?v=VYLM7GfIGMY)**
 
 CRE is not an integration — it is the **only execution path** that can settle a dispute. The `CREVerifier` contract accepts exactly one input: a `WorkflowVerdict` struct with a valid ECDSA signature from the CRE operator key. That key never leaves the CRE HSM.
 
