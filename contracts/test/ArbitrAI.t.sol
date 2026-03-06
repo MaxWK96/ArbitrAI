@@ -324,28 +324,6 @@ contract ArbitrAITest is Test {
         assertEq(bob.balance, bobBalanceBefore + DEPOSIT);
     }
 
-    function test_FailureMode_EmergencyCircuitBreaker_ByOwner() public {
-        bytes32 disputeId = _createAndActivateDispute();
-        _submitEvidence(disputeId);
-
-        uint256 aliceBalanceBefore = alice.balance;
-        uint256 bobBalanceBefore = bob.balance;
-
-        vm.prank(owner);
-        verifier.triggerEmergencyRefund(disputeId, "CRE workflow timeout after 24h");
-
-        assertEq(alice.balance, aliceBalanceBefore + DEPOSIT);
-        assertEq(bob.balance, bobBalanceBefore + DEPOSIT);
-    }
-
-    function test_FailureMode_EmergencyRefund_RevertsIfNotOwner() public {
-        bytes32 disputeId = _createAndActivateDispute();
-
-        vm.prank(alice);
-        vm.expectRevert();
-        verifier.triggerEmergencyRefund(disputeId, "attack");
-    }
-
     // ─────────────────────────────────────────────────────────
     // Tests: Security
     // ─────────────────────────────────────────────────────────

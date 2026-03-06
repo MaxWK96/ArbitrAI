@@ -23,21 +23,29 @@ version: "1.0.0"
 owner: "${CRE_OWNER_ADDRESS}"
 
 # ── Secrets ─────────────────────────────────────────────────────────────────
-# All secrets are stored in Chainlink CRE's HSM-backed secrets manager.
+# All secrets are stored in Chainlink CRE's DON vault (HSM-backed).
 # They are injected at runtime and never appear in workflow logs.
-secrets:
-  - name: ANTHROPIC_API_KEY
-    description: "Claude API key for AI verdict generation"
-  - name: OPENAI_API_KEY
-    description: "OpenAI API key for GPT-4 verdict generation"
-  - name: MISTRAL_API_KEY
-    description: "Mistral API key for third model vote"
-  - name: OPERATOR_PRIVATE_KEY
-    description: "CRE operator key — signs verdicts for on-chain ECDSA verification"
-  - name: EVIDENCE_SERVER_KEY
-    description: "Bearer token for Confidential HTTP evidence endpoint"
-  - name: RPC_URL
-    description: "Ethereum RPC endpoint (Sepolia)"
+#
+# Keys:
+#   ANTHROPIC_API_KEY    — Claude API key for AI verdict generation
+#   OPENAI_API_KEY       — OpenAI API key for GPT-4o verdict generation
+#   MISTRAL_API_KEY      — Mistral API key for third model vote
+#   OPERATOR_PRIVATE_KEY — CRE operator key; signs verdicts for on-chain ECDSA verification
+#   EVIDENCE_SERVER_KEY  — Bearer token for Confidential HTTP evidence endpoint
+#   RPC_URL              — Ethereum RPC endpoint (Sepolia)
+vaultDonSecrets:
+  - key: ANTHROPIC_API_KEY
+    owner: ""
+  - key: OPENAI_API_KEY
+    owner: ""
+  - key: MISTRAL_API_KEY
+    owner: ""
+  - key: OPERATOR_PRIVATE_KEY
+    owner: ""
+  - key: EVIDENCE_SERVER_KEY
+    owner: ""
+  - key: RPC_URL
+    owner: ""
 
 # ── Environment ──────────────────────────────────────────────────────────────
 env:

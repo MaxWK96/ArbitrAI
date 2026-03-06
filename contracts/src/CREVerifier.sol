@@ -255,26 +255,6 @@ contract CREVerifier is Ownable, Pausable {
         _executeSettlement(verdict, verdictHash, dispute);
     }
 
-    /**
-     * @notice Emergency circuit breaker — owner (multisig in production) can trigger refund
-     *         if the CRE workflow fails to deliver a verdict within a reasonable time.
-     * @dev This is the "what if everything breaks" safety net. In the demo, this shows
-     *      the circuit breaker activating and funds being returned.
-     */
-    function triggerEmergencyRefund(bytes32 disputeId, string calldata reason)
-        external
-        onlyOwner
-    {
-        bytes32 proofHash =
-            keccak256(abi.encodePacked(disputeId, reason, block.timestamp, "EMERGENCY"));
-
-        emit CircuitBreakerActivated(
-            disputeId, string.concat("EMERGENCY: ", reason), bytes32(0), block.timestamp
-        );
-
-        escrow.executeRefund(disputeId, proofHash, string.concat("Emergency refund: ", reason));
-    }
-
     // ─────────────────────────────────────────────────────────
     // Internal Settlement Logic
     // ─────────────────────────────────────────────────────────

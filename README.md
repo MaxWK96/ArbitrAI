@@ -24,7 +24,7 @@ Three specific failure modes that existing solutions cannot fix:
 
 ArbitrAI removes the trusted third party entirely. Funds are locked in a smart contract that can only be unlocked by a cryptographic proof that a verifiable AI process ran and reached consensus.
 
-- **Escrow with no admin key**: `executeVerdict()` and `executeRefund()` are `onlyCREVerifier`. No owner, no multisig, no override. Funds are mathematically locked until CRE acts.
+- **Escrow with no admin key**: `executeVerdict()` and `executeRefund()` are `onlyCREVerifier`. No multisig, no owner override on verdicts. Funds cannot be directed to any winner without a valid CRE operator signature. The only admin power is a `pause()` that blocks new dispute creation — it cannot touch locked funds.
 - **Private evidence**: Evidence is stored AES-256-GCM encrypted. The CRE workflow fetches it via Confidential HTTP inside a TEE — content never touches a public log. Only the `keccak256` hash is on-chain.
 - **Three independent AI votes**: Claude Opus 4.6, GPT-4o, and Mistral Large each analyze the same evidence independently. 2/3 consensus is required; a split triggers a full refund with no fee.
 - **Immutable audit trail**: Every model vote, confidence score, evidence hash, and `workflowOutputHash` is recorded permanently in `ArbitrationRegistry`. Anyone can verify the link between the AI reasoning and the on-chain settlement.
@@ -71,7 +71,7 @@ CRE is not decorative. It is the **only path** to escrow settlement.
 
 - `CREVerifier.submitVerdict()` can only be called with a valid ECDSA signature from the CRE operator key
 - The operator key signs the `WorkflowVerdict` struct inside the CRE WASM workflow — never exposed outside
-- If CRE fails to run, funds remain locked — no admin override, no manual fallback
+- If CRE fails to run, funds remain locked — no admin can direct funds to any party
 - CRE workflow: `cre-workflow/src/index.ts` — orchestrates 3 AI models, applies consensus, signs verdict, submits on-chain
 
 **Files**: `cre-workflow/` — TypeScript WASM workflow with `workflow.yaml` manifest
@@ -120,12 +120,12 @@ No single AI model controls the outcome.
 
 ---
 
-### Escrow Security — No Admin Keys
-`DisputeEscrow` is designed so no admin can unilaterally release funds.
+### Escrow Security — No Admin Verdict Override
+`DisputeEscrow` is designed so no admin can direct locked funds to any party.
 
-- `executeVerdict()` and `executeRefund()` are `onlyCREVerifier` — no owner override
+- `executeVerdict()` and `executeRefund()` are `onlyCREVerifier` — only a valid CRE operator signature triggers settlement
 - `ReentrancyGuard` on all fund movements
-- `Pausable` only freezes new dispute creation — cannot freeze or redirect existing funds
+- `Pausable` only freezes new dispute creation — cannot freeze or redirect existing locked funds
 - Protocol fee is 1% of total pool, taken transparently from the settlement transaction
 - Evidence-hash mismatch reverts the verdict submission — CRE cannot fabricate evidence it didn't see
 
@@ -260,19 +260,38 @@ Expected output (with real keys):
 [demo] Evidence server ready
 
 [demo] Seeding demo evidence...
-  [demo] Party A stored — hash: 0x7b9e3a1f2c...
-  [demo] Party B stored — hash: 0x4f2d8a0e1b...
-[demo] Evidence seeded — hashes match on-chain commitments
+  [demo] Party A stored - hash: 0xace483ba1c...
+  [demo] Party B stored - hash: 0x74d8cb8aa3...
+[demo] Evidence seeded
 
-Step 1: Fetching dispute from chain...       ✓ IN_ARBITRATION
-Step 2: Fetching evidence via Confidential HTTP...  ✓ both parties
-Step 3: Querying AI models in parallel...
-  Claude Opus 4.6   → PARTY_A  (8500 bps)
-  GPT-4o            → PARTY_A  (9100 bps)
-  Mistral Large     → PARTY_A  (7800 bps)
-Step 4: Applying 2/3 consensus...            ✓ PARTY_A wins
-Step 5: Signing WorkflowVerdict...           ✓ signed
-Step 6: Verdict ready (SUBMIT_ONCHAIN=false, skipping broadcast)
+[1/6] Fetching dispute from ArbitrationRegistry...
+  Party A: 0xac266469bb463ec83e2d6845e513d47b191739b0
+  Party B: 0xee6cade823bb01321fa753fc0e89bd9402a04dd7
+  Status:  IN_ARBITRATION
+  Description: Demo dispute: Alice built a landing page...
+
+[2/6] Fetching evidence via Confidential HTTP...
+  check Evidence A fetched and verified (63 chars)
+  check Evidence B fetched and verified (70 chars)
+
+[3/6] Building arbitration prompt (identical for all models)...
+
+[4/6] Querying Claude, GPT-4o, and Mistral in parallel...
+  (real model responses - verdicts and confidence scores vary by run)
+
+[5/6] Applying 2/3 consensus logic...
+  Outcome:   FAVOR_PARTY_A
+  Consensus: 2/3
+  Confidence: ~85.0%
+
+[6/6] Signing verdict with CRE operator key...
+  Signature: 0x1a2b3c4d5e...
+
+Workflow complete in ~15s
+Verdict: FAVOR_PARTY_A (2/3 consensus)
+
+=== WORKFLOW OUTPUT ===
+{"disputeId": "0x0442170...", "calldata": "0x...", "verdictSummary": "FAVOR_PARTY_A 2/3"}
 ```
 
 To submit the verdict on-chain: set `SUBMIT_ONCHAIN=true` in `cre-workflow/.env`, then run `npm run simulate:demo`.
@@ -282,11 +301,11 @@ To submit the verdict on-chain: set `SUBMIT_ONCHAIN=true` in `cre-workflow/.env`
 ## Test Results
 
 ```
-Ran 23 tests for test/ArbitrAI.t.sol:ArbitrAITest
-Suite result: ok. 23 passed; 0 failed; 0 skipped
+Ran 21 tests for test/ArbitrAI.t.sol:ArbitrAITest
+Suite result: ok. 21 passed; 0 failed; 0 skipped
 ```
 
-Covers: happy path (Alice wins, Bob wins), failure modes (no consensus, circuit breaker, emergency refund),
+Covers: happy path (Alice wins, Bob wins), failure modes (no consensus, circuit breaker),
 security tests (invalid sig, replay, double-settle, stale verdict, evidence mismatch, access control),
 fee math, fuzz test (256 runs).
 
