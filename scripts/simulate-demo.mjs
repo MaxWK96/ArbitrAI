@@ -51,8 +51,9 @@ const DISPUTE_ID    = env.DISPUTE_ID    ?? '0x0442170ea59ff899df64464d8e0be7601e
 const EVIDENCE_KEY  = env.EVIDENCE_SERVER_KEY ?? 'arbitrai-dev-key-change-in-production';
 const PORT          = 3002;
 
-// Demo evidence — content whose keccak256 matches the on-chain evidenceHashA/B
-// committed during CreateDemoDispute.s.sol broadcast.
+// These strings must match exactly what was hashed on-chain in CreateDemoDispute.s.sol.
+// keccak256(A) = 0xace483ba1cd1aceb9857e2993cae9feeddd6869bdbb4a0a8932dcb1037135b20
+// keccak256(B) = 0x74d8cb8aa31efd9cc848d46ad4280a1fd81d5e94bfed0bade362d59a3736764e
 const DEMO_EVIDENCE = {
   a: {
     content:      'Alice evidence: GitHub repo link, design file, client sign-off email.',
@@ -98,6 +99,38 @@ async function submitEvidence(party, content, partyAddress) {
   console.log(`  [demo] Party ${party.toUpperCase()} stored — hash: ${String(body.contentHash).slice(0, 14)}...`);
 }
 
+// ─── Shared: start server + seed evidence ────────────────────────────────────
+
+async function startServerAndSeed() {
+  console.log(`[demo] Dispute: ${DISPUTE_ID}`);
+  console.log('[demo] Starting evidence server...');
+
+  const server = spawn(
+    'cmd', ['/c', 'npm', 'start'],
+    { cwd: join(ROOT, 'evidence-server'), stdio: ['ignore', 'pipe', 'pipe'] }
+  );
+
+  server.stderr.on('data', d => process.stderr.write('[server] ' + d));
+  server.stdout.on('data', d => {
+    const msg = d.toString();
+    if (msg.includes('Error') || msg.includes('error')) process.stderr.write('[server] ' + msg);
+  });
+
+  const cleanup = () => { try { server.kill('SIGTERM'); } catch {} };
+  process.on('exit',   cleanup);
+  process.on('SIGINT', () => { cleanup(); process.exit(130); });
+
+  await waitForServer();
+  console.log('[demo] Evidence server ready\n');
+
+  console.log('[demo] Seeding demo evidence...');
+  await submitEvidence('a', DEMO_EVIDENCE.a.content, DEMO_EVIDENCE.a.partyAddress);
+  await submitEvidence('b', DEMO_EVIDENCE.b.content, DEMO_EVIDENCE.b.partyAddress);
+  console.log('[demo] Evidence seeded\n');
+
+  return cleanup;
+}
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -123,35 +156,8 @@ async function main() {
   }
 
   console.log('[demo] API keys found for: Anthropic, OpenAI, Mistral');
-  console.log(`[demo] Dispute: ${DISPUTE_ID}`);
 
-  // Start evidence server
-  console.log('[demo] Starting evidence server...');
-  const server = spawn(
-    'npx', ['tsx', 'src/server.ts'],
-    { cwd: join(ROOT, 'evidence-server'), stdio: ['ignore', 'pipe', 'pipe'] }
-  );
-
-  // Only show server errors, not the startup banner
-  server.stderr.on('data', d => process.stderr.write('[server] ' + d));
-  server.stdout.on('data', d => {
-    const msg = d.toString();
-    if (msg.includes('Error') || msg.includes('error')) process.stderr.write('[server] ' + msg);
-  });
-
-  const cleanup = () => { try { server.kill('SIGTERM'); } catch {} };
-  process.on('exit',   cleanup);
-  process.on('SIGINT', () => { cleanup(); process.exit(130); });
-
-  // Wait for ready
-  await waitForServer();
-  console.log('[demo] Evidence server ready\n');
-
-  // Seed demo evidence
-  console.log('[demo] Seeding demo evidence...');
-  await submitEvidence('a', DEMO_EVIDENCE.a.content, DEMO_EVIDENCE.a.partyAddress);
-  await submitEvidence('b', DEMO_EVIDENCE.b.content, DEMO_EVIDENCE.b.partyAddress);
-  console.log('[demo] Evidence seeded — hashes match on-chain commitments\n');
+  const cleanup = await startServerAndSeed();
 
   // Run the CRE workflow
   const simulate = spawn('npm', ['run', 'simulate'], {
